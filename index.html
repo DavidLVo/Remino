@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1D9E75" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Remi" />
+  <meta name="description" content="Remi — enkle påminnelser, rolig hverdag" />
+  <link rel="manifest" id="remi-manifest" />
+  <title>Remi</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #1D9E75; --green-dark: #0F6E56; --green-deep: #085041; --green-light: #E1F5EE;
+      --blue-light: #E6F1FB; --blue-mid: #185FA5;
+      --amber-light: #FAEEDA; --amber-mid: #854F0B;
+      --pink-light: #FBEAF0; --pink-mid: #993556;
+      --bg: #ffffff; --bg-secondary: #f5f5f3;
+      --text: #1a1a1a; --text-secondary: #6b6b6b;
+      --border: rgba(0,0,0,0.1); --border-mid: rgba(0,0,0,0.2);
+      --radius-md: 8px; --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a1a; --bg-secondary: #2a2a2a;
+        --text: #f0f0f0; --text-secondary: #999;
+        --border: rgba(255,255,255,0.1); --border-mid: rgba(255,255,255,0.2);
+        --green-light: #0d3d2e; --blue-light: #0d1f33;
+        --amber-light: #2d1f05; --pink-light: #2d1020;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-secondary); color: var(--text); min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
+    .app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
+    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem 1.25rem; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); }
+    .avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .header-text h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+    .header-text p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .status-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); margin-left: auto; flex-shrink: 0; }
+    .message-bubble { background: var(--green-light); border-radius: var(--radius-lg); border-bottom-left-radius: 4px; padding: 12px 14px; margin-bottom: 1.25rem; }
+    .message-bubble p { font-size: 14px; color: var(--green-deep); line-height: 1.6; }
+    .daily-quote { font-size: 13px; color: var(--green-dark); margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(15,110,86,0.2); font-style: italic; line-height: 1.5; }
+    .section-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; padding-left: 2px; }
+    .reminder-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.25rem; min-height: 180px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); gap: 12px; }
+    .empty-line { width: 40px; height: 1.5px; background: var(--border-mid); border-radius: 1px; }
+    .empty-text { font-size: 14px; color: var(--text-secondary); }
+    .reminder-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px; display: flex; align-items: center; gap: 12px; transition: opacity 0.2s; }
+    .reminder-card.done { opacity: 0.4; }
+    .reminder-card.done .reminder-title { text-decoration: line-through; }
+    .cat-icon { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .cat-meeting { background: var(--blue-light); } .cat-errand { background: var(--amber-light); } .cat-important { background: var(--pink-light); }
+    .reminder-info { flex: 1; min-width: 0; }
+    .reminder-title { font-size: 15px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .reminder-time { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .check-btn { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; border: 1.5px solid var(--border-mid); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
+    .check-btn.checked { background: var(--green); border-color: var(--green); }
+    .check-btn.checked::after { content: ''; display: block; width: 6px; height: 10px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg) translate(-1px, -1px); }
+    .delete-btn { width: 28px; height: 28px; min-width: 28px; border-radius: 50%; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.4; -webkit-tap-highlight-color: transparent; }
+    .delete-btn:hover { opacity: 1; color: #c0392b; }
+    .add-section { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+    .add-title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 10px; }
+    .input-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    input[type="text"] { font-size: 15px; padding: 10px 12px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text); width: 100%; outline: none; -webkit-appearance: none; font-family: inherit; }
+    input[type="text"]:focus { border-color: var(--green); }
+    .add-btn { padding: 10px 18px; background: var(--green); color: white; border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; min-height: 44px; font-family: inherit; }
+    .add-btn:active { background: var(--green-dark); }
+    .mic-btn { width: 44px; height: 44px; min-width: 44px; border-radius: 50%; border: 0.5px solid var(--border-mid); background: var(--bg-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
+    .mic-btn:hover, .mic-btn:active { background: var(--green-light); border-color: var(--green); }
+    .mic-btn.listening { background: var(--green-light); border-color: var(--green); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(29,158,117,0.3); } 50% { box-shadow: 0 0 0 7px rgba(29,158,117,0); } }
+    .mic-shape { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+    .mic-body { width: 9px; height: 13px; border-radius: 5px; border: 2px solid var(--text-secondary); background: transparent; }
+    .mic-arc { width: 15px; height: 8px; border: 2px solid var(--text-secondary); border-top: none; border-radius: 0 0 8px 8px; margin-top: -1px; }
+    .mic-stand { width: 2px; height: 4px; background: var(--text-secondary); margin: 0 auto; }
+    .mic-base { width: 11px; height: 2px; background: var(--text-secondary); border-radius: 1px; }
+    .mic-btn.listening .mic-body, .mic-btn.listening .mic-arc { border-color: var(--green); }
+    .mic-btn.listening .mic-stand, .mic-btn.listening .mic-base { background: var(--green); }
+    .stepper { display: flex; align-items: stretch; border: 0.5px solid var(--border-mid); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-secondary); height: 44px; }
+    .step-btn { width: 44px; height: 44px; border: none; background: transparent; font-size: 20px; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: background 0.1s; font-family: inherit; }
+    .step-btn:hover, .step-btn:active { background: var(--green-light); color: var(--green); }
+    .step-center { flex: 1; display: flex; align-items: center; justify-content: center; border-left: 0.5px solid var(--border-mid); border-right: 0.5px solid var(--border-mid); cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .step-center:hover { background: var(--bg); }
+    .step-time-display { font-size: 15px; font-weight: 500; color: var(--text); }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; justify-content: center; }
+    .overlay.open { display: flex; }
+    .picker-sheet { background: var(--bg); border-radius: 20px 20px 0 0; padding: 16px 0 32px; width: 100%; max-width: 480px; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px; border-bottom: 0.5px solid var(--border); }
+    .sheet-title { font-size: 15px; font-weight: 500; color: var(--text); }
+    .sheet-done { font-size: 15px; font-weight: 500; color: var(--green); cursor: pointer; padding: 4px 0; }
+    .wheels { display: flex; align-items: center; justify-content: center; padding: 8px 0; }
+    .wheel-col { display: flex; flex-direction: column; align-items: center; width: 90px; }
+    .wheel-sep { font-size: 26px; font-weight: 500; color: var(--text); padding: 0 2px; margin-top: -4px; }
+    .wheel { height: 200px; overflow: hidden; position: relative; width: 100%; }
+    .wheel-inner { display: flex; flex-direction: column; align-items: center; cursor: grab; }
+    .wheel-inner.grabbing { cursor: grabbing; }
+    .wheel-item { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--text-secondary); width: 100%; flex-shrink: 0; }
+    .wheel-item.selected { color: var(--text); font-size: 24px; font-weight: 500; }
+    .wheel::before, .wheel::after { content: ''; position: absolute; left: 0; right: 0; height: 72px; z-index: 2; pointer-events: none; }
+    .wheel::before { top: 0; background: linear-gradient(to bottom, var(--bg), transparent); }
+    .wheel::after { bottom: 0; background: linear-gradient(to top, var(--bg), transparent); }
+    .wheel-highlight { position: absolute; top: 50%; left: 8px; right: 8px; height: 40px; transform: translateY(-50%); border-top: 0.5px solid var(--border-mid); border-bottom: 0.5px solid var(--border-mid); border-radius: 4px; pointer-events: none; z-index: 1; }
+    .col-label { font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .tag { font-size: 12px; padding: 5px 11px; border-radius: 99px; cursor: pointer; border: 0.5px solid transparent; font-weight: 500; -webkit-tap-highlight-color: transparent; min-height: 30px; display: flex; align-items: center; }
+    .tag.meeting { background: var(--blue-light); color: var(--blue-mid); }
+    .tag.errand { background: var(--amber-light); color: var(--amber-mid); }
+    .tag.important { background: var(--pink-light); color: var(--pink-mid); }
+    .tag.selected { border-color: var(--green); }
+    .voice-status { font-size: 12px; color: var(--text-secondary); margin-top: 6px; min-height: 16px; }
+    .no-support { font-size: 12px; color: var(--amber-mid); background: var(--amber-light); padding: 8px 12px; border-radius: var(--radius-md); margin-top: 8px; display: none; }
+    .install-banner { display: none; align-items: center; gap: 10px; background: var(--green-light); border: 0.5px solid var(--green); border-radius: var(--radius-lg); padding: 10px 14px; margin-bottom: 1.25rem; font-size: 13px; color: var(--green-deep); }
+    .install-banner button { margin-left: auto; padding: 6px 14px; background: var(--green); color: white; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="install-banner" id="install-banner">
+    🍃 Legg til Remi på startskjermen!
+    <button onclick="installApp()">Installer</button>
+  </div>
+  <div class="header">
+    <div class="avatar">🍃</div>
+    <div class="header-text">
+      <h1>Remi</h1>
+      <p>Enkle påminnelser, rolig hverdag</p>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+  <div class="message-bubble">
+    <p id="greeting-text">God dag! Her er en oversikt over hva du har på programmet i dag. Ta det ett steg om gangen. 🙂</p>
+    <p class="daily-quote" id="daily-quote"></p>
+  </div>
+  <div class="section-label">Dagens påminnelser</div>
+  <div class="reminder-list" id="reminder-list"></div>
+  <div class="add-section">
+    <div class="add-title">Legg til en påminnelse</div>
+    <div class="input-row">
+      <input type="text" id="new-title" placeholder="Skriv eller trykk på mikrofonen..." autocomplete="off" />
+      <button class="mic-btn" id="mic-btn" onclick="toggleVoice()" aria-label="Stemmeinndata">
+        <div class="mic-shape"><div class="mic-body"></div><div class="mic-arc"></div><div class="mic-stand"></div><div class="mic-base"></div></div>
+      </button>
+    </div>
+    <div class="voice-status" id="voice-status"></div>
+    <div class="input-row">
+      <div class="stepper" style="flex:1;">
+        <button class="step-btn" onclick="stepHour(1)">+</button>
+        <div class="step-center" onclick="openWheel()"><div class="step-time-display" id="step-display">00:00</div></div>
+        <button class="step-btn" onclick="stepHour(-1)">−</button>
+      </div>
+      <button class="add-btn" onclick="addReminder()">Legg til</button>
+    </div>
+    <div class="tag-row" id="cat-tags">
+      <span class="tag meeting selected" data-cat="meeting" onclick="selectCat(this)">Avtale</span>
+      <span class="tag errand" data-cat="errand" onclick="selectCat(this)">Ærend</span>
+      <span class="tag important" data-cat="important" onclick="selectCat(this)">Viktig dato</span>
+    </div>
+    <div class="no-support" id="no-support">Stemmeinndata støttes ikke i denne nettleseren. Prøv Chrome på Android eller Safari på iPhone.</div>
+  </div>
+</div>
+<div class="overlay" id="overlay">
+  <div class="picker-sheet">
+    <div class="sheet-header">
+      <div class="sheet-title">Sett tid</div>
+      <div class="sheet-done" onclick="closeWheel()">Ferdig</div>
+    </div>
+    <div class="wheels">
+      <div class="wheel-col"><div class="wheel" id="hour-wheel"><div class="wheel-highlight"></div><div class="wheel-inner" id="hour-inner"></div></div><div class="col-label">Time</div></div>
+      <div class="wheel-sep">:</div>
+      <div class="wheel-col"><div class="wheel" id="min-wheel"><div class="wheel-highlight"></div><div class="wheel-inner" id="min-inner"></div></div><div class="col-label">Min</div></div>
+    </div>
+  </div>
+</div>
+<script>
+  const quotes = ["Hver stor reise starter med ett enkelt steg.","Du er i stand til mer enn du vet.","Fremgang, ikke perfeksjon.","Små handlinger fører til store endringer.","Tro på deg selv — du klarer dette.","I dag er fylt av muligheter.","Ett steg om gangen er fortsatt fremover.","Din innsats i dag bygger morgendagen.","Utfordringer gjør deg sterkere.","Du møtte opp — det betyr allerede noe.","Vær tålmodig med deg selv. Vekst tar tid.","Fokuser på hva du kan gjøre, ikke hva du ikke kan.","Hver dag er en ny start.","Du gjør det bedre enn du tror.","Vennlighet mot deg selv er en styrke.","Ta et dypt pust. Du er nok.","Store ting bygges én dag om gangen.","Stol på prosessen. Fortsett.","Ditt beste er alltid nok.","I dag velger du hvordan du går videre.","Mot er å møte opp selv på tunge dager.","Du har alt du trenger inni deg.","Stødig og rolig vinner alltid.","Hver påminnelse avhuket er en seier.","Du gjør fremgang — fortsett sånn.","Hvil når du trenger det. Reis deg igjen.","Ditt potensial har ingen grense.","Den eneste veien ut er gjennom — og du kan.","Små seire betyr noe. Feire dem.","Du er sterkere enn i går."];
+  const encouragements = ["Du gjør det bra! En ting om gangen.","Ingen stress. Bare rolig gjennom dagen.","Husk: hvert lite steg teller.","Du klarer dette. Jeg er her med deg.","Nesten i mål — bare noen få ting igjen i dag."];
+  const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  document.getElementById('daily-quote').textContent = quotes[dayOfYear % quotes.length];
+  const catMeta = { meeting:{icon:'📅',cls:'cat-meeting'}, errand:{icon:'🛒',cls:'cat-errand'}, important:{icon:'🎀',cls:'cat-important'} };
+  let reminders=[], selHour=0, selMin=0;
+  const ITEM_H=40;
+  function pad(n){return String(n).padStart(2,'0');}
+  function loadReminders(){try{return JSON.parse(localStorage.getItem('remi-reminders')||'[]');}catch{return[];}}
+  function saveReminders(){localStorage.setItem('remi-reminders',JSON.stringify(reminders));}
+  reminders=loadReminders();
+  function updateDisplay(){document.getElementById('step-display').textContent=`${pad(selHour)}:${pad(selMin)}`;}
+  function stepHour(dir){selHour=(selHour+dir+24)%24;updateDisplay();}
+  function render(){
+    const list=document.getElementById('reminder-list');
+    if(reminders.length===0){list.innerHTML='<div class="empty-state"><div class="empty-line"></div><div class="empty-text">Dagen din er åpen</div></div>';return;}
+    list.innerHTML=reminders.map(r=>{const meta=catMeta[r.cat]||catMeta.errand;return`<div class="reminder-card ${r.done?'done':''}"><div class="cat-icon ${meta.cls}">${meta.icon}</div><div class="reminder-info"><div class="reminder-title">${r.title}</div><div class="reminder-time">${r.time}</div></div><button class="check-btn ${r.done?'checked':''}" onclick="toggle(${r.id})"></button><button class="delete-btn" onclick="deleteReminder(${r.id})">✕</button></div>`;}).join('');
+  }
+  function toggle(id){const r=reminders.find(x=>x.id===id);if(!r)return;r.done=!r.done;saveReminders();render();const done=reminders.filter(x=>x.done).length;document.getElementById('greeting-text').textContent=done===reminders.length?"Du har tatt deg av alt i dag. Godt jobbet — vær snill mot deg selv i kveld.":encouragements[Math.floor(Math.random()*encouragements.length)];}
+  function deleteReminder(id){reminders=reminders.filter(x=>x.id!==id);saveReminders();render();}
+  let selectedCat='meeting';
+  function selectCat(el){document.querySelectorAll('#cat-tags .tag').forEach(t=>t.classList.remove('selected'));el.classList.add('selected');selectedCat=el.dataset.cat;}
+  function addReminder(){const title=document.getElementById('new-title').value.trim();if(!title){document.getElementById('new-title').focus();return;}reminders.unshift({id:Date.now(),title,time:`${pad(selHour)}:${pad(selMin)}`,cat:selectedCat,done:false});saveReminders();document.getElementById('new-title').value='';selHour=0;selMin=0;updateDisplay();render();document.getElementById('greeting-text').textContent="Jeg har notert det for deg. Ikke bekymre deg for å glemme det nå.";}
+  document.getElementById('new-title').addEventListener('keydown',e=>{if(e.key==='Enter')addReminder();});
+  function buildWheel(innerId,values,selected){const inner=document.getElementById(innerId);inner.innerHTML='';for(let i=0;i<2;i++)inner.appendChild(makeItem(''));values.forEach(v=>{const el=makeItem(pad(v));if(v===selected)el.classList.add('selected');inner.appendChild(el);});for(let i=0;i<2;i++)inner.appendChild(makeItem(''));inner.style.transform=`translateY(${-values.indexOf(selected)*ITEM_H}px)`;}
+  function makeItem(t){const el=document.createElement('div');el.className='wheel-item';el.textContent=t;return el;}
+  function openWheel(){const hours=Array.from({length:24},(_,i)=>i),mins=Array.from({length:12},(_,i)=>i*5);buildWheel('hour-inner',hours,selHour);buildWheel('min-inner',mins,mins.reduce((a,b)=>Math.abs(b-selMin)<Math.abs(a-selMin)?b:a));attachWheel('hour-inner',hours,v=>{selHour=v;updateDisplay();});attachWheel('min-inner',mins,v=>{selMin=v;updateDisplay();});document.getElementById('overlay').classList.add('open');}
+  function closeWheel(){document.getElementById('overlay').classList.remove('open');}
+  document.getElementById('overlay').addEventListener('click',function(e){if(e.target===this)closeWheel();});
+  function attachWheel(innerId,values,onChange){const inner=document.getElementById(innerId),wheel=inner.parentElement;let startY,startTY,isDragging=false;let currentIdx=values.indexOf(innerId==='hour-inner'?selHour:values.reduce((a,b)=>Math.abs(b-selMin)<Math.abs(a-selMin)?b:a));function getTY(){const m=inner.style.transform.match(/translateY\((-?[\d.]+)px\)/);return m?parseFloat(m[1]):0;}function snapTo(idx){idx=Math.max(0,Math.min(values.length-1,idx));inner.style.transition='transform 0.2s ease';inner.style.transform=`translateY(${-idx*ITEM_H}px)`;setTimeout(()=>inner.style.transition='',220);currentIdx=idx;inner.querySelectorAll('.wheel-item').forEach((el,i)=>el.classList.toggle('selected',i-2===idx));onChange(values[idx]);}function onStart(y){startY=y;startTY=getTY();isDragging=true;inner.classList.add('grabbing');}function onMove(y){if(!isDragging)return;inner.style.transition='none';inner.style.transform=`translateY(${startTY+(y-startY)}px)`;}function onEnd(y){if(!isDragging)return;isDragging=false;inner.classList.remove('grabbing');snapTo(currentIdx-Math.round((y-startY)/ITEM_H));}wheel.addEventListener('mousedown',e=>onStart(e.clientY));window.addEventListener('mousemove',e=>{if(isDragging)onMove(e.clientY);});window.addEventListener('mouseup',e=>{if(isDragging)onEnd(e.clientY);});wheel.addEventListener('touchstart',e=>onStart(e.touches[0].clientY),{passive:true});wheel.addEventListener('touchmove',e=>{if(isDragging)onMove(e.touches[0].clientY);},{passive:true});wheel.addEventListener('touchend',e=>onEnd(e.changedTouches[0].clientY));}
+  let recognition=null,listening=false;
+  function toggleVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){document.getElementById('no-support').style.display='block';return;}if(listening){recognition.stop();return;}recognition=new SR();recognition.lang='nb-NO';recognition.interimResults=true;const micBtn=document.getElementById('mic-btn'),status=document.getElementById('voice-status'),input=document.getElementById('new-title');recognition.onstart=()=>{listening=true;micBtn.classList.add('listening');status.textContent='Lytter...';input.value='';};recognition.onresult=e=>{input.value=Array.from(e.results).map(r=>r[0].transcript).join('');if(e.results[e.results.length-1].isFinal)status.textContent='';};recognition.onerror=e=>{status.textContent=e.error==='not-allowed'?'Mikrofontilgang nektet.':'';stopListening();};recognition.onend=()=>stopListening();recognition.start();}
+  function stopListening(){listening=false;document.getElementById('mic-btn').classList.remove('listening');}
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-banner').style.display='flex';});
+  function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-banner').style.display='none';});}
+  (function(){var m='{"name":"Remi","short_name":"Remi","description":"Enkle påminnelser, rolig hverdag","start_url":"/","display":"standalone","background_color":"#ffffff","theme_color":"#1D9E75","orientation":"portrait","icons":[{"src":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==","sizes":"192x192","type":"image/png"}]}';var b=new Blob([m],{type:'application/json'});document.getElementById('remi-manifest').href=URL.createObjectURL(b);})();
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
+  updateDisplay();render();
+</script>
+</body>
+</html>
